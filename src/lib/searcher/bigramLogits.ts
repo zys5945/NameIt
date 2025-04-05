@@ -1,5 +1,5 @@
 // based on https://gist.github.com/ushiocheng/6fa66301e0367b3131b183201ba49901
-export const BIGRAM_LOGITS = {
+export const BIGRAM_LOGITS: Record<string, number> = {
   aa: -10.190369304817139,
   ab: -5.814612283156854,
   ac: -5.202206866572943,
