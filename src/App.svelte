@@ -1,6 +1,5 @@
 <script lang="ts">
   import { ModeWatcher } from "mode-watcher";
-
   import svelteLogo from "./assets/svelte.svg";
   import viteLogo from "/vite.svg";
   import "./app.css";
