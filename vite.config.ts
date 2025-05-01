@@ -5,9 +5,5 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [tailwindcss(), svelte()],
-  resolve: {
-    alias: {
-      $lib: path.resolve("./src/lib"),
-    },
-  },
+  resolve: { alias: { $lib: path.resolve("./src/lib") } }
 });
