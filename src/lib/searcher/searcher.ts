@@ -1,3 +1,5 @@
+// TODO change snake_case to camelCase
+
 import { BIGRAM_LOGITS, AVG_LOGIT } from "./bigramLogits";
 
 /**

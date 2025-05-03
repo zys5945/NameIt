@@ -1,24 +1,30 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Toggle } from "$lib/components/ui/toggle/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
+  import { Button } from "$lib/components/ui/button/index.ts";
+  import { Toggle } from "$lib/components/ui/toggle/index.ts";
+  import { Input } from "$lib/components/ui/input/index.ts";
   import Moon from "lucide-svelte/icons/moon";
   import Settings from "lucide-svelte/icons/settings";
   import Sun from "lucide-svelte/icons/sun";
   import { toggleMode } from "mode-watcher";
 
   interface $Props {
-    text: string;
+    onquery: (value: string) => void;
   }
+  let { onquery }: $Props = $props();
 
-  let { text = $bindable("") } = $props() as $Props;
+  let text = $state("");
+
+  function callQuery() {
+    onquery(text);
+  }
 </script>
 
 <div class="flex flex-row gap-1">
-  <Input bind:value={text} />
+  <Input bind:value={text} on:keyup={callQuery} placeholder="Name" />
 
   <Toggle variant="outline" aria-label="Toggle settings panel">
     <Settings class="h-5 w-5" />
+    <span class="sr-only">Toggle Settings Panel</span>
   </Toggle>
 
   <Button class="pl-3 pr-3" on:click={toggleMode} variant="outline">
