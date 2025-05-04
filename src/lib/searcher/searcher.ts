@@ -1,4 +1,5 @@
 // TODO change snake_case to camelCase
+// TODO handle all errors
 
 import { BIGRAM_LOGITS, AVG_LOGIT } from "./bigramLogits";
 
@@ -19,78 +20,86 @@ import { BIGRAM_LOGITS, AVG_LOGIT } from "./bigramLogits";
  */
 export class Searcher {
   words: string[];
-  words_len: number;
-  word_constraints: boolean[];
-  num_word_constraints: number;
+  wordsLen: number;
+  wordConstraints: boolean[];
+  numWordConstraints: number;
   letters: string;
-  letters_len: number;
-  min_len: number;
-  max_len: number;
-  use_stats: boolean;
-  greedy_stats_pruning: boolean;
-  last_pos: number[];
+  lettersLen: number;
+  minLen: number;
+  maxLen: number;
+  useStats: boolean;
+  greedyStatsPruning: boolean;
+  lastPos: number[];
 
+  /**
+   * @param words list of words to perform the search on
+   * @param wordConstraints list of booleans, true if the word at the corresponding have to be used
+   * @param minLen minimum length of the result
+   * @param maxLen maximum length of the result
+   * @param useStats whether to use bigram stats
+   * @param greedyStatsPruning if true, then branch is pruned as soon as encountering one letter pair with low bigram logit
+   */
   constructor(
     words: string[],
-    word_constraints: boolean[],
-    min_len = 3,
-    max_len: number | null = null,
-    use_stats = true,
-    greedy_stats_pruning = true
+    wordConstraints: boolean[],
+    minLen = 3,
+    maxLen: number | null = null,
+    useStats = true,
+    greedyStatsPruning = true
   ) {
     this.words = words;
-    this.words_len = words.length;
+    this.wordsLen = words.length;
 
     if (words.length === 0) {
       throw new Error("provide at least 1 word");
     }
 
-    this.word_constraints = word_constraints;
-    this.num_word_constraints = word_constraints.reduce(
+    this.wordConstraints = wordConstraints;
+    this.numWordConstraints = wordConstraints.reduce(
       (acc, val) => acc + (val ? 1 : 0),
       0
     );
 
-    if (words.length !== word_constraints.length) {
+    if (words.length !== wordConstraints.length) {
       throw new Error("number of words should equal to number of constraints");
     }
 
     this.letters = words.join("");
-    this.letters_len = this.letters.length;
+    this.lettersLen = this.letters.length;
 
-    this.min_len = min_len;
-    if (this.min_len < this.num_word_constraints) {
-      // TODO: should show INFO feedback and change min_len in the ui
-      this.min_len = this.num_word_constraints;
+    this.minLen = minLen;
+    if (this.minLen < this.numWordConstraints) {
+      // TODO: should show INFO feedback and change minLen in the ui
+      this.minLen = this.numWordConstraints;
     }
 
-    this.max_len = max_len || this.letters_len;
+    this.maxLen = maxLen || this.lettersLen;
 
-    if (this.min_len > this.max_len) {
+    if (this.minLen > this.maxLen) {
       throw new Error("minimum length cannot be greater than maximum length");
     }
 
-    if (this.min_len > this.letters_len) {
+    if (this.minLen > this.lettersLen) {
       throw new Error(
         "minimum length cannot be greater than the number of total letters available"
       );
     }
 
-    this.use_stats = use_stats;
-    this.greedy_stats_pruning = greedy_stats_pruning;
+    this.useStats = useStats;
+    this.greedyStatsPruning = greedyStatsPruning;
 
-    this.last_pos = [];
+    this.lastPos = [];
   }
 
-  private _try_extend_in_place(
+  private _tryExtendInPlace(
     pos: number[],
     by: number | null = null
   ): number[] | null {
-    by = by ?? Math.max(this.min_len - pos.length, 0);
+    by = by ?? Math.max(this.minLen - pos.length, 0);
 
     if (
-      pos.length >= this.max_len ||
-      pos[pos.length - 1] + by >= this.letters_len
+      pos.length >= this.maxLen ||
+      pos[pos.length - 1] + by >= this.lettersLen
     ) {
       return null;
     }
@@ -105,7 +114,7 @@ export class Searcher {
   /**
    * modifies pos in place
    */
-  private _pop_shift_in_place(pos: number[]): number[] | null {
+  private _popShiftInPlace(pos: number[]): number[] | null {
     pos.pop();
     if (pos.length === 0) {
       return null;
@@ -114,22 +123,22 @@ export class Searcher {
     return pos;
   }
 
-  public _next_valid_candidate(): [number[], number] | null {
-    const next_pos = [...this.last_pos];
+  public _nextValidCandidate(): [number[], number] | null {
+    const nextPos = [...this.lastPos];
 
     // try walking down the tree if possible
-    if (this._try_extend_in_place(next_pos, 1) === null) {
-      next_pos[next_pos.length - 1] += 1;
+    if (this._tryExtendInPlace(nextPos, 1) === null) {
+      nextPos[nextPos.length - 1] += 1;
     }
-    return this._make_valid_candidate(next_pos);
+    return this._makeValidCandidate(nextPos);
   }
 
   /**
-   * checks if in_pos is a valid candidate, if not then tries to find the next valid candidate
+   * checks if inPos is a valid candidate, if not then tries to find the next valid candidate
    * @returns null if search space exhausted
    */
-  public _make_valid_candidate(in_pos: number[]): [number[], number] | null {
-    let pos: number[] | null = in_pos;
+  public _makeValidCandidate(inPos: number[]): [number[], number] | null {
+    let pos: number[] | null = inPos;
 
     let score = -Infinity;
 
@@ -139,20 +148,20 @@ export class Searcher {
         return null;
       }
 
-      if (pos[pos.length - 1] >= this.letters_len) {
-        pos = this._pop_shift_in_place(pos);
+      if (pos[pos.length - 1] >= this.lettersLen) {
+        pos = this._popShiftInPlace(pos);
         continue;
       }
 
-      if (pos.length < this.min_len) {
-        const extend_result = this._try_extend_in_place(pos);
+      if (pos.length < this.minLen) {
+        const extendResult = this._tryExtendInPlace(pos);
         // if we cannot extend then we have to pop shift again
-        pos = extend_result ? extend_result : this._pop_shift_in_place(pos);
+        pos = extendResult ? extendResult : this._popShiftInPlace(pos);
         continue;
       }
 
-      if (this.word_constraints.length > 0) {
-        const result = this._force_words_constraints(pos);
+      if (this.wordConstraints.length > 0) {
+        const result = this._forceWordsConstraints(pos);
         if (result === null) {
           return null;
         }
@@ -164,34 +173,34 @@ export class Searcher {
         }
       }
 
-      if (this.use_stats) {
-        let total_log_value = 0;
-        let greedy_break = false;
+      if (this.useStats) {
+        let totalLogValue = 0;
+        let greedyBreak = false;
 
         for (let i = 0; i < pos.length - 1; i++) {
           const pair = this.letters[pos[i]] + this.letters[pos[i + 1]];
-          const pair_log_value = BIGRAM_LOGITS[pair] ?? -Infinity;
+          const pairLogValue = BIGRAM_LOGITS[pair] ?? -Infinity;
 
-          if (this.greedy_stats_pruning && pair_log_value < AVG_LOGIT) {
+          if (this.greedyStatsPruning && pairLogValue < AVG_LOGIT) {
             pos = pos.slice(0, i + 2);
             pos[pos.length - 1] += 1;
-            greedy_break = true;
+            greedyBreak = true;
             break;
           }
 
-          total_log_value += pair_log_value;
+          totalLogValue += pairLogValue;
         }
 
-        if (greedy_break) {
+        if (greedyBreak) {
           continue;
         }
 
-        if (total_log_value < pos.length * AVG_LOGIT) {
+        if (totalLogValue < pos.length * AVG_LOGIT) {
           pos[pos.length - 1] += 1;
           continue;
         }
 
-        score = total_log_value;
+        score = totalLogValue;
       }
 
       break;
@@ -200,71 +209,71 @@ export class Searcher {
     return [pos, score];
   }
 
-  public _force_words_constraints(
+  public _forceWordsConstraints(
     pos: number[] | null
   ): [boolean, number[]] | null {
     if (!pos) {
       return null;
     }
 
-    if (pos[pos.length - 1] >= this.letters_len) {
-      return this._force_words_constraints(this._pop_shift_in_place(pos));
+    if (pos[pos.length - 1] >= this.lettersLen) {
+      return this._forceWordsConstraints(this._popShiftInPlace(pos));
     }
 
     // pointing to the next word that needs to be used
-    let cur_word = -1;
-    let cur_word_offset = 0;
-    let cur_word_end = 0; // exclusive
-    let words_used = 0;
+    let curWord = -1;
+    let curWordOffset = 0;
+    let curWordEnd = 0; // exclusive
+    let wordsUsed = 0;
 
-    const set_next_word = () => {
-      if (cur_word >= 0) {
-        words_used += 1;
+    const setNextWord = () => {
+      if (curWord >= 0) {
+        wordsUsed += 1;
       }
 
-      // going one more than words_len to allow cur_word to be set to words_len
-      for (let i = cur_word + 1; i <= this.words_len; i++) {
-        cur_word = i;
-        cur_word_offset = cur_word_end;
-        cur_word_end =
-          cur_word >= this.words_len
+      // going one more than wordsLen to allow curWord to be set to wordsLen
+      for (let i = curWord + 1; i <= this.wordsLen; i++) {
+        curWord = i;
+        curWordOffset = curWordEnd;
+        curWordEnd =
+          curWord >= this.wordsLen
             ? Infinity
-            : cur_word_offset + this.words[cur_word].length;
+            : curWordOffset + this.words[curWord].length;
 
-        if (i >= this.words_len || this.word_constraints[i]) {
+        if (i >= this.wordsLen || this.wordConstraints[i]) {
           break;
         }
       }
     };
 
-    set_next_word();
+    setNextWord();
 
-    let cur_pointer = 0;
-    const max_pointers = Math.min(
-      this.max_len,
-      (pos?.length ?? 0) + this.letters_len - 1 - pos[pos.length - 1]
+    let curPointer = 0;
+    const maxPointers = Math.min(
+      this.maxLen,
+      (pos?.length ?? 0) + this.lettersLen - 1 - pos[pos.length - 1]
     );
 
-    let pos_changed = false;
+    let posChanged = false;
 
-    for (cur_pointer = 0; cur_pointer < max_pointers; cur_pointer++) {
+    for (curPointer = 0; curPointer < maxPointers; curPointer++) {
       // check & fill as long as there's no skipped word
       // when there is skipped word, pop shift
 
       // all words are covered
-      if (cur_word >= this.words_len) {
+      if (curWord >= this.wordsLen) {
         break;
       }
 
       // skipped word, need to pop shift
-      if (cur_pointer < pos.length && pos[cur_pointer] >= cur_word_end) {
-        if (cur_pointer === 0) {
+      if (curPointer < pos.length && pos[curPointer] >= curWordEnd) {
+        if (curPointer === 0) {
           return null;
         }
 
-        const new_pos = pos.slice(0, cur_pointer);
-        new_pos[new_pos.length - 1] += 1;
-        const result = this._force_words_constraints(new_pos);
+        const newPos = pos.slice(0, curPointer);
+        newPos[newPos.length - 1] += 1;
+        const result = this._forceWordsConstraints(newPos);
         if (result === null) {
           return null;
         }
@@ -272,68 +281,71 @@ export class Searcher {
       }
 
       // number of pointers remaining, including current pointer
-      const num_rem_pointers = max_pointers - cur_pointer;
+      const numRemPointers = maxPointers - curPointer;
 
       // number of words need to be used
-      const num_rem_words = this.num_word_constraints - words_used;
+      const numRemWords = this.numWordConstraints - wordsUsed;
 
       // no possible arrangement exists
-      if (num_rem_pointers < num_rem_words) {
+      if (numRemPointers < numRemWords) {
         return null;
       }
 
       // more pointers than words, extend if possible
-      if (num_rem_pointers > num_rem_words) {
-        if (cur_pointer >= pos.length) {
+      if (numRemPointers > numRemWords) {
+        if (curPointer >= pos.length) {
           pos.push(pos[pos.length - 1] + 1);
-          pos_changed = true;
+          posChanged = true;
         }
 
-        if (pos[cur_pointer] >= cur_word_offset) {
+        if (pos[curPointer] >= curWordOffset) {
           // guaranteed to not skip any words
-          set_next_word();
+          setNextWord();
         }
 
         continue;
       }
 
-      // guaranteed num_rem_pointers == num_rem_words, which we will either move or extend + move
+      // guaranteed numRemPointers == numRemWords, which we will either move or extend + move
 
-      if (cur_pointer >= pos.length) {
-        pos.push(cur_word_offset);
-        pos_changed = true;
-      } else if (pos[cur_pointer] < cur_word_offset) {
-        pos[cur_pointer] = cur_word_offset;
-        pos_changed = true;
+      if (curPointer >= pos.length) {
+        pos.push(curWordOffset);
+        posChanged = true;
+      } else if (pos[curPointer] < curWordOffset) {
+        pos[curPointer] = curWordOffset;
+        posChanged = true;
       }
 
-      set_next_word();
+      setNextWord();
     }
 
-    return [pos_changed, pos];
+    return [posChanged, pos];
   }
 
-  public _make_initial_candidate(): [number[], number] | null {
-    return this._make_valid_candidate(
-      Array.from({ length: this.min_len }, (_, i) => i)
+  public _makeInitialCandidate(): [number[], number] | null {
+    return this._makeValidCandidate(
+      Array.from({ length: this.minLen }, (_, i) => i)
     );
   }
 
-  private _make_letters(pos: number[]): string {
+  private _makeLetters(pos: number[]): string {
     return pos.map((i) => this.letters[i]).join("");
   }
 
-  next_candidate(): [string, number] | null {
+  /**
+   * returns [word, pos, score]
+   */
+  nextCandidate(): [string, number[], number] | null {
     const candidate =
-      this.last_pos.length === 0
-        ? this._make_initial_candidate()
-        : this._next_valid_candidate();
+      this.lastPos.length === 0
+        ? this._makeInitialCandidate()
+        : this._nextValidCandidate();
 
     if (candidate === null) {
       return null;
     }
 
-    this.last_pos = candidate[0];
-    return [this._make_letters(candidate[0]), candidate[1]];
+    this.lastPos = candidate[0];
+    return [this._makeLetters(candidate[0]), candidate[0], candidate[1]];
   }
 }
