@@ -1,8 +1,9 @@
 <script lang="ts">
   import UserInput from "./user-input.svelte";
-  import { Searcher } from "$lib/searcher/searcher.ts";
 
-  let searcher: Searcher | null = null;
+  import SearcherWorker from "$lib/searcher/worker.ts?worker";
+
+  const worker = new SearcherWorker();
 
   function query(input: string) {
     if (!input) {
@@ -13,12 +14,7 @@
     const constraints = new Array(words.length).fill(true);
     const minLength = input.length < 3 ? input.length : 3;
 
-    console.log(words, constraints, minLength);
-
-    searcher = new Searcher(words, constraints, minLength);
-
-    const candidate = searcher.next_candidate();
-    console.log(candidate);
+    // console.log(words, constraints, minLength);
   }
 </script>
 
