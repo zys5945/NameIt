@@ -3,6 +3,8 @@
 
 @layer base {
   :root {
+    font-size: var(--text-lg);
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 

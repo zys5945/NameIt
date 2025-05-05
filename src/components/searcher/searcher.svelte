@@ -1,20 +1,21 @@
 <script lang="ts">
-  import UserInput from "./user-input.svelte";
-
+  import type { SearcherInput } from "$lib/searcher/searcher-input.ts";
   import SearcherWorker from "$lib/searcher/worker.ts?worker";
+
+  import UserInput from "./user-input.svelte";
 
   const worker = new SearcherWorker();
 
-  function query(input: string) {
-    if (!input) {
+  worker.onmessage = (e) => {
+    const result = e.data;
+    console.log(result);
+  };
+
+  function query(input: SearcherInput) {
+    if (input.words.length === 0) {
       return;
     }
-
-    const words = input.split(" ");
-    const constraints = new Array(words.length).fill(true);
-    const minLength = input.length < 3 ? input.length : 3;
-
-    // console.log(words, constraints, minLength);
+    worker.postMessage(input);
   }
 </script>
 

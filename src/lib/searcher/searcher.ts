@@ -1,7 +1,6 @@
-// TODO change snake_case to camelCase
 // TODO handle all errors
 
-import { BIGRAM_LOGITS, AVG_LOGIT } from "./bigramLogits";
+import { BIGRAM_LOGITS, AVG_LOGIT } from "./bigram-logits";
 
 /**
  * formulates possible candidates as a tree, whose edges are the pointer positions

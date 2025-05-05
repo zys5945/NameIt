@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "isolatedModules": true, // https://vite.dev/guide/features.html#isolatedmodules
     "paths": {
       "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"]
