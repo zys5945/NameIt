@@ -1,10 +1,24 @@
-import { Searcher } from "./searcher";
-import { SearcherInput } from "./searcher-input";
+import { Searcher, Candidate, SearcherResults } from "./searcher";
 
-type IncomingMessageEvent = MessageEvent<SearcherInput>;
-type ReplyData = { results: [string, number[], number][] } | { error: Error };
+/**
+ * if null is sent, then the existing searcher will stop and get dropped
+ */
+export interface SearchWorkerInput {
+  searchId: number;
+  words: string[];
+  minLen: number | null;
+  maxLen: number | null;
+  useStats: boolean;
+  greedyStatsPruning: boolean;
+  useAllWords: boolean;
+}
 
-const RESPOND_INTERVAL = 100;
+type IncomingMessageEvent = MessageEvent<SearchWorkerInput | null>;
+export type ReplyData =
+  | { searchId: number; results: Candidate[] }
+  | { error: Error };
+
+const RESPOND_INTERVAL = 200;
 
 let currentSearchId = 0;
 
@@ -12,35 +26,51 @@ function reply(message: ReplyData) {
   postMessage(message);
 }
 
-function scheduleSlice(searcher: Searcher, searchId: number) {
-  setTimeout(() => runSlice(searcher, searchId), RESPOND_INTERVAL);
+function scheduleSlice(
+  searcher: Searcher,
+  results: SearcherResults,
+  searchId: number
+) {
+  setTimeout(() => runSlice(searcher, results, searchId), RESPOND_INTERVAL);
 }
 
-function runSlice(searcher: Searcher, searchId: number) {
+function runSlice(
+  searcher: Searcher,
+  results: SearcherResults,
+  searchId: number
+) {
   const startTime = Date.now();
 
   if (searchId !== currentSearchId) {
     return;
   }
 
-  const results = [];
-  while (Date.now() - startTime < RESPOND_INTERVAL) {
-    results.push(searcher.nextCandidate());
-  }
-  reply({ results: results });
+  let hasMore = true;
 
-  scheduleSlice(searcher, searchId);
+  while (Date.now() - startTime < RESPOND_INTERVAL) {
+    const candidate = searcher.nextCandidate();
+    if (candidate === null) {
+      hasMore = false;
+      break;
+    }
+    results.add(candidate);
+  }
+  reply({ searchId, results: results.results });
+
+  if (hasMore) {
+    scheduleSlice(searcher, results, searchId);
+  }
 }
 
-function makeSearcher(input: SearcherInput): Searcher {
-  const wordConstraints = input.useAllWords
-    ? new Array(input.words.length).fill(true)
-    : [];
+function makeSearcher(input: SearchWorkerInput): Searcher {
+  const wordConstraints = new Array(input.words.length).fill(
+    input.useAllWords ? true : false
+  );
 
   return new Searcher(
     input.words,
     wordConstraints,
-    input.minLen,
+    input.minLen ?? 0,
     input.maxLen,
     input.useStats,
     input.greedyStatsPruning
@@ -48,16 +78,16 @@ function makeSearcher(input: SearcherInput): Searcher {
 }
 
 onmessage = (e: IncomingMessageEvent) => {
-  currentSearchId++;
-  const searchId = currentSearchId;
-
   if (e.data == null) {
     return;
   }
 
+  currentSearchId = e.data.searchId;
+
   try {
     const searcher = makeSearcher(e.data);
-    scheduleSlice(searcher, searchId);
+    const results = new SearcherResults(1000);
+    scheduleSlice(searcher, results, currentSearchId);
   } catch (e) {
     reply({ error: e });
   }

@@ -1,6 +1,55 @@
 // TODO handle all errors
 
+import { sortedIndex } from "$lib/binary-search";
+
 import { BIGRAM_LOGITS, AVG_LOGIT } from "./bigram-logits";
+
+export type Candidate = [string, number[], number];
+
+export class SearcherResults {
+  bucketSize: number;
+
+  results = [];
+  nameSet = new Set<string>();
+
+  constructor(bucketSize) {
+    this.bucketSize = bucketSize;
+  }
+
+  /**
+   * @param order 1 for ascending, -1 for descending
+   */
+  _addToArray(array: Candidate[], candidate: Candidate, order) {
+    if (this.nameSet.has(candidate[0])) {
+      return;
+    }
+
+    const candidateKey = candidate[2] * order;
+    if (
+      array.length === this.bucketSize &&
+      array[array.length - 1][2] * order < candidateKey
+    ) {
+      return;
+    }
+
+    array.splice(
+      sortedIndex(array, candidate, (x) => x[2] * order),
+      0,
+      candidate
+    );
+    this.nameSet.add(candidate[0]);
+
+    // limit size
+    if (array.length > this.bucketSize) {
+      const popped = array.pop();
+      this.nameSet.delete(popped[0]);
+    }
+  }
+
+  add(candidate: Candidate) {
+    this._addToArray(this.results, candidate, -1);
+  }
+}
 
 /**
  * formulates possible candidates as a tree, whose edges are the pointer positions
@@ -68,7 +117,6 @@ export class Searcher {
 
     this.minLen = minLen;
     if (this.minLen < this.numWordConstraints) {
-      // TODO: should show INFO feedback and change minLen in the ui
       this.minLen = this.numWordConstraints;
     }
 
@@ -334,7 +382,7 @@ export class Searcher {
   /**
    * returns [word, pos, score]
    */
-  nextCandidate(): [string, number[], number] | null {
+  nextCandidate(): Candidate | null {
     const candidate =
       this.lastPos.length === 0
         ? this._makeInitialCandidate()

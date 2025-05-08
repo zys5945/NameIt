@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button/index.ts";
-  import { Toggle } from "$lib/components/ui/toggle/index.ts";
-  import { Input } from "$lib/components/ui/input/index.ts";
-  import { Label } from "$lib/components/ui/label/index.ts";
-  import { Switch } from "$lib/components/ui/switch/index.ts";
+  import { Button } from "$lib/components/ui/button/index";
+  import { Toggle } from "$lib/components/ui/toggle/index";
+  import { Input } from "$lib/components/ui/input/index";
+  import { Label } from "$lib/components/ui/label/index";
+  import { Switch } from "$lib/components/ui/switch/index";
 
   import Moon from "lucide-svelte/icons/moon";
   import Sun from "lucide-svelte/icons/sun";
@@ -11,7 +11,7 @@
 
   import { toggleMode } from "mode-watcher";
 
-  import type { SearcherInput } from "$lib/searcher/searcher-input.ts";
+  import type { SearcherInput } from "$lib/searcher/input";
   import Tooltip from "./tooltip.svelte";
 
   interface $Props {
@@ -30,6 +30,7 @@
 
   $effect(() => {
     onquery({
+      searchId: 0,
       words: text.split(" ").filter((w) => w.length > 0),
       minLen,
       maxLen,

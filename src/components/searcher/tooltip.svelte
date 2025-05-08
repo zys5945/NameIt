@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import * as Tooltip from "$lib/components/ui/tooltip/index";
   import CircleHelp from "lucide-svelte/icons/circle-help";
 
   interface $Props {
