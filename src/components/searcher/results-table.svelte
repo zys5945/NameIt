@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fade } from "svelte/transition";
+
   import * as Table from "$lib/components/ui/table/index";
 
   interface $Props {

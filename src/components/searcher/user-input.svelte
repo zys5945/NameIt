@@ -13,14 +13,15 @@
 
   import { toggleMode } from "mode-watcher";
 
-  import type { SearcherInput } from "$lib/searcher/input";
+  import type { SearchWorkerInput } from "$lib/searcher/worker";
   import Tooltip from "./tooltip.svelte";
 
   interface $Props {
-    onquery: (input: SearcherInput) => void;
+    onquery: (input: SearchWorkerInput) => void;
+    inputFocus: boolean;
     error?: string | null;
   }
-  let { onquery, error }: $Props = $props();
+  let { onquery, inputFocus = $bindable(), error }: $Props = $props();
 
   let showSettings = $state(false);
 
@@ -55,7 +56,13 @@
 <div class="flex flex-col gap-2">
   <!-- Input -->
   <div class="flex flex-row gap-1">
-    <Input bind:value={text} placeholder="Name" class="flex-grow" />
+    <Input
+      bind:value={text}
+      placeholder="Name"
+      class="flex-grow"
+      on:focusin={() => (inputFocus = true)}
+      on:focusout={() => (inputFocus = false)}
+    />
 
     <Toggle
       variant="outline"
@@ -80,8 +87,8 @@
   <Collapsible.Root bind:open={() => !!error, () => {}}>
     <Collapsible.Content>
       <div class="flex flex-row align-middle rounded-md border gap-2 p-2 -mt-1">
-        <Warn class="h-5 w-5 text-yellow-600" />
-        <p class="w-full text-yellow-600">{error}</p>
+        <Warn class="h-5 w-5 text-yellow-700" />
+        <p class="w-full text-yellow-700">{error}</p>
       </div>
     </Collapsible.Content>
   </Collapsible.Root>

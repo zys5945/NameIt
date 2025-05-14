@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type { SearcherInput } from "$lib/searcher/searcher-input";
+  import type { SearchWorkerInput } from "$lib/searcher/worker";
   import SearcherWorker from "$lib/searcher/worker?worker";
 
   import UserInput from "./user-input.svelte";
   import ResultsTable from "./results-table.svelte";
 
+  let inputFocus = $state(false);
   let queryString = $state("");
   let error = $state("");
   let displayResultsArray = $state(null);
@@ -25,7 +26,7 @@
     displayResultsArray = e.data.results;
   };
 
-  function query(input: SearcherInput) {
+  function query(input: SearchWorkerInput) {
     queryString = input.words.join("");
     error = "";
     displayResultsArray = null;
@@ -42,7 +43,11 @@
   }
 </script>
 
-<div class="flex flex-col max-w-[800px] ml-auto mr-auto">
-  <UserInput onquery={query} {error} />
+<!-- have inputs in the middle if the user is not interacting with it, and there's no user-initiated search results -->
+<div
+  class="flex flex-col w-full max-w-[800px] absolute ml-auto mr-auto left-1/2 -translate-x-1/2 transition-all
+   {inputFocus || displayResultsArray ? 'top-4' : 'top-1/2 -translate-y-1/2'}"
+>
+  <UserInput onquery={query} bind:inputFocus {error} />
   <ResultsTable input={queryString} results={displayResultsArray} />
 </div>
