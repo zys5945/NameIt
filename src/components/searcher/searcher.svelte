@@ -1,7 +1,4 @@
 <script lang="ts">
-  import _ from "lodash";
-
-  import type { Candidate } from "$lib/searcher/searcher";
   import type { SearcherInput } from "$lib/searcher/searcher-input";
   import SearcherWorker from "$lib/searcher/worker?worker";
 
@@ -9,6 +6,7 @@
   import ResultsTable from "./results-table.svelte";
 
   let queryString = $state("");
+  let error = $state("");
   let displayResultsArray = $state(null);
 
   let searchId = 0;
@@ -16,8 +14,7 @@
 
   worker.onmessage = (e) => {
     if (e.data.error) {
-      // TODO: handle error
-      console.error(e.data.error);
+      error = e.data.error.message;
       return;
     }
 
@@ -29,12 +26,13 @@
   };
 
   function query(input: SearcherInput) {
+    queryString = input.words.join("");
+    error = "";
+    displayResultsArray = null;
+
     if (input.words.length === 0) {
       return;
     }
-
-    queryString = input.words.join("");
-    displayResultsArray = null;
 
     input.words = input.words.map((x) => x.toLowerCase()); // only have bigram logits for lowercase letters
 
@@ -44,7 +42,7 @@
   }
 </script>
 
-<div class="flex flex-col max-w-[800px]">
-  <UserInput onquery={query} />
+<div class="flex flex-col max-w-[800px] ml-auto mr-auto">
+  <UserInput onquery={query} {error} />
   <ResultsTable input={queryString} results={displayResultsArray} />
 </div>

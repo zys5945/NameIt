@@ -99,7 +99,7 @@ export class Searcher {
     this.wordsLen = words.length;
 
     if (words.length === 0) {
-      throw new Error("provide at least 1 word");
+      throw new Error("Provide at least 1 word");
     }
 
     this.wordConstraints = wordConstraints;
@@ -109,7 +109,9 @@ export class Searcher {
     );
 
     if (words.length !== wordConstraints.length) {
-      throw new Error("number of words should equal to number of constraints");
+      throw new Error(
+        "Number of words should equal to number of word constraints"
+      );
     }
 
     this.letters = words.join("");
@@ -120,16 +122,16 @@ export class Searcher {
       this.minLen = this.numWordConstraints;
     }
 
+    if (this.minLen > this.lettersLen) {
+      throw new Error(
+        "Minimum length cannot be greater than the number of letters, try add more letters or words"
+      );
+    }
+
     this.maxLen = maxLen || this.lettersLen;
 
     if (this.minLen > this.maxLen) {
-      throw new Error("minimum length cannot be greater than maximum length");
-    }
-
-    if (this.minLen > this.lettersLen) {
-      throw new Error(
-        "minimum length cannot be greater than the number of total letters available"
-      );
+      throw new Error("Minimum length cannot be greater than maximum length");
     }
 
     this.useStats = useStats;
