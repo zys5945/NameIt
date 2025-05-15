@@ -18,10 +18,16 @@
 
   interface $Props {
     onquery: (input: SearchWorkerInput) => void;
+    placeholder: string;
     inputFocus: boolean;
     error?: string | null;
   }
-  let { onquery, inputFocus = $bindable(), error }: $Props = $props();
+  let {
+    onquery,
+    placeholder,
+    inputFocus = $bindable(),
+    error,
+  }: $Props = $props();
 
   let showSettings = $state(false);
 
@@ -58,7 +64,7 @@
   <div class="flex flex-row gap-1">
     <Input
       bind:value={text}
-      placeholder="Name"
+      {placeholder}
       class="flex-grow"
       on:focusin={() => (inputFocus = true)}
       on:focusout={() => (inputFocus = false)}

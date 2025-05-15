@@ -19,7 +19,7 @@ export type ReplyData =
   | { error: Error };
 
 const RESPOND_INTERVAL = 200;
-
+const SEARCH_RESULTS_SIZE = 500;
 let currentSearchId = 0;
 
 function reply(message: ReplyData) {
@@ -86,7 +86,7 @@ onmessage = (e: IncomingMessageEvent) => {
 
   try {
     const searcher = makeSearcher(e.data);
-    const results = new SearcherResults(1000);
+    const results = new SearcherResults(SEARCH_RESULTS_SIZE);
     scheduleSlice(searcher, results, currentSearchId);
   } catch (e) {
     reply({ error: e });

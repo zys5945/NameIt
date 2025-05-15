@@ -27,23 +27,25 @@
   }
 </script>
 
-{#if results && results.length > 0}
-  <Table.Root>
-    <Table.Header>
-      <Table.Row>
+<Table.Root>
+  <Table.Header>
+    <Table.Row>
+      {#if results}
         <Table.Head>Name</Table.Head>
         <Table.Head class="text-right">Letters used</Table.Head>
+      {/if}
+    </Table.Row>
+  </Table.Header>
+  <Table.Body>
+    {#each results as result (result[0])}
+      <Table.Row>
+        <Table.Cell><div in:fade>{result[0]}</div></Table.Cell>
+        <Table.Cell class="text-right"
+          ><div in:fade>
+            {@html highlightLetters(input, result[1])}
+          </div></Table.Cell
+        >
       </Table.Row>
-    </Table.Header>
-    <Table.Body>
-      {#each results as result (result[0])}
-        <Table.Row>
-          <Table.Cell>{result[0]}</Table.Cell>
-          <Table.Cell class="text-right"
-            >{@html highlightLetters(input, result[1])}</Table.Cell
-          >
-        </Table.Row>
-      {/each}
-    </Table.Body>
-  </Table.Root>
-{/if}
+    {/each}
+  </Table.Body>
+</Table.Root>
