@@ -37,12 +37,12 @@
     </Table.Row>
   </Table.Header>
   <Table.Body>
-    {#each results as result (result[0])}
+    {#each results as result (result.word)}
       <Table.Row>
-        <Table.Cell><div in:fade>{result[0]}</div></Table.Cell>
+        <Table.Cell><div in:fade>{result.word}</div></Table.Cell>
         <Table.Cell class="text-right"
           ><div in:fade>
-            {@html highlightLetters(input, result[1])}
+            {@html highlightLetters(input, result.positions)}
           </div></Table.Cell
         >
       </Table.Row>
