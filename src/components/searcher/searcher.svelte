@@ -5,12 +5,14 @@
   import { ANIMATION_DATA } from "./animation-data";
   import UserInput from "./user-input.svelte";
   import ResultsTable from "./results-table.svelte";
+  import ProgressBar from "./progress-bar.svelte";
 
   let placeholder = $state("Name");
   let inputFocus = $state(false);
   let queryString = $state("");
   let error = $state("");
   let displayResultsArray = $state(null);
+  let progressPercent = $state(0);
 
   let searchId = 0;
   const worker = new SearcherWorker();
@@ -25,7 +27,7 @@
       return;
     }
 
-    console.log(JSON.stringify(e.data.results.slice(0, 10)));
+    progressPercent = e.data.progress.searchedPercent;
     displayResultsArray = e.data.results;
   };
 
@@ -33,6 +35,7 @@
     queryString = input.words.join("");
     error = "";
     displayResultsArray = null;
+    progressPercent = 0;
 
     searchId++;
 
@@ -145,5 +148,8 @@
   onmouseenter={stopAnimation}
 >
   <UserInput onquery={query} {placeholder} bind:inputFocus {error} />
+  {#if queryString !== "" && !animating}
+    <ProgressBar value={progressPercent} />
+  {/if}
   <ResultsTable input={queryString} results={displayResultsArray} />
 </div>

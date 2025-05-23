@@ -1,10 +1,15 @@
-// TODO handle all errors
-
 import { sortedIndex } from "$lib/binary-search";
 
 import { BIGRAM_LOGITS, AVG_LOGIT } from "./bigram-logits";
 
-export type Candidate = [string, number[], number];
+export interface Candidate {
+  word: string;
+  positions: number[];
+  score: number;
+}
+
+const possibilityDp: { [lettersLen: number]: { [posLen: number]: number } } =
+  {};
 
 export class SearcherResults {
   bucketSize: number;
@@ -20,11 +25,11 @@ export class SearcherResults {
    * @param order 1 for ascending, -1 for descending
    */
   _addToArray(array: Candidate[], candidate: Candidate, order) {
-    if (this.nameSet.has(candidate[0])) {
+    if (this.nameSet.has(candidate.word)) {
       return;
     }
 
-    const candidateKey = candidate[2] * order;
+    const candidateKey = candidate.score * order;
     if (
       array.length === this.bucketSize &&
       array[array.length - 1][2] * order < candidateKey
@@ -37,7 +42,7 @@ export class SearcherResults {
       0,
       candidate
     );
-    this.nameSet.add(candidate[0]);
+    this.nameSet.add(candidate.word);
 
     // limit size
     if (array.length > this.bucketSize) {
@@ -48,6 +53,22 @@ export class SearcherResults {
 
   add(candidate: Candidate) {
     this._addToArray(this.results, candidate, -1);
+  }
+}
+
+export class SearchProgress {
+  searched: number;
+  searchedPercent: number;
+  remaining: number;
+  remainingPercent: number;
+  total: number;
+
+  constructor(searched: number, total: number) {
+    this.searched = searched;
+    this.searchedPercent = (this.searched / total) * 100;
+    this.remaining = total - searched;
+    this.remainingPercent = (this.remaining / total) * 100;
+    this.total = total;
   }
 }
 
@@ -77,7 +98,11 @@ export class Searcher {
   maxLen: number;
   useStats: boolean;
   greedyStatsPruning: boolean;
-  lastPos: number[];
+
+  lastPos: number[] = [];
+
+  totalPossibilities: number = 0;
+  // dp[lettersLen][posLen] = number of possibilities for lettersLen letters with posLen (free) pointers
 
   /**
    * @param words list of words to perform the search on
@@ -137,7 +162,7 @@ export class Searcher {
     this.useStats = useStats;
     this.greedyStatsPruning = greedyStatsPruning;
 
-    this.lastPos = [];
+    this.calcTotalPossibilities();
   }
 
   private _tryExtendInPlace(
@@ -381,9 +406,86 @@ export class Searcher {
     return pos.map((i) => this.letters[i]).join("");
   }
 
-  /**
-   * returns [word, pos, score]
-   */
+  calcPossibilitiesFixedLength(lettersLen, posLen) {
+    if (posLen === lettersLen) {
+      return 1;
+    }
+
+    if (posLen === 0) {
+      return 1;
+    }
+
+    if (posLen === 1) {
+      return lettersLen;
+    }
+
+    if (lettersLen in possibilityDp && posLen in possibilityDp[lettersLen]) {
+      return possibilityDp[lettersLen][posLen];
+    }
+
+    // either we take the first letter, then allocate pos-1 letters for the rest
+    // or we allocate all the letters for the rest
+    const value =
+      this.calcPossibilitiesFixedLength(lettersLen - 1, posLen - 1) +
+      this.calcPossibilitiesFixedLength(lettersLen - 1, posLen);
+    possibilityDp[lettersLen] = possibilityDp[lettersLen] ?? {};
+    possibilityDp[lettersLen][posLen] = value;
+    return value;
+  }
+
+  calcPossibilitiesRange(lettersLen, minLen, maxLen) {
+    minLen = Math.max(minLen, 0);
+    maxLen = Math.min(maxLen, lettersLen);
+    if (maxLen < minLen) {
+      return 0;
+    }
+
+    let possibilities = 0;
+    for (let i = minLen; i <= maxLen; i++) {
+      if (i > lettersLen) {
+        break;
+      }
+      possibilities += this.calcPossibilitiesFixedLength(lettersLen, i);
+    }
+    return possibilities;
+  }
+
+  calcTotalPossibilities() {
+    this.totalPossibilities = this.calcPossibilitiesRange(
+      this.lettersLen,
+      this.minLen,
+      this.maxLen
+    );
+
+    return this.totalPossibilities;
+  }
+
+  calcProgress(): SearchProgress {
+    if (!this.lastPos) {
+      return new SearchProgress(0, this.totalPossibilities);
+    }
+
+    // if lastPos is not null then 1 pos has been searched. then for each position after minLen, one additional pos has been searched
+    let searched = this.lastPos.length - this.minLen + 1;
+
+    for (let i = 0; i < this.lastPos.length; ++i) {
+      const pos = this.lastPos[i];
+      const firstPossiblePos = i === 0 ? 0 : this.lastPos[i - 1] + 1; // first possible position that this ptr can be
+      const needLetters = this.minLen - i - 1; // number of letters needed to meet minLen
+
+      // each encountered zero means all the branches where that position is 1 has been searched
+      for (let j = firstPossiblePos; j < pos; ++j) {
+        searched += this.calcPossibilitiesRange(
+          this.lettersLen - j - 1,
+          needLetters,
+          this.maxLen - i - 1
+        );
+      }
+    }
+
+    return new SearchProgress(searched, this.totalPossibilities);
+  }
+
   nextCandidate(): Candidate | null {
     const candidate =
       this.lastPos.length === 0
@@ -391,10 +493,20 @@ export class Searcher {
         : this._nextValidCandidate();
 
     if (candidate === null) {
+      // set lastPos to the last minLen indices
+      this.lastPos = Array.from(
+        { length: this.minLen },
+        (_, i) => this.lettersLen - this.minLen + i
+      );
+
       return null;
     }
 
     this.lastPos = candidate[0];
-    return [this._makeLetters(candidate[0]), candidate[0], candidate[1]];
+    return {
+      word: this._makeLetters(candidate[0]),
+      positions: candidate[0],
+      score: candidate[1],
+    };
   }
 }

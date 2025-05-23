@@ -1,4 +1,9 @@
-import { Searcher, Candidate, SearcherResults } from "./searcher";
+import {
+  Searcher,
+  Candidate,
+  SearcherResults,
+  SearchProgress,
+} from "./searcher";
 
 /**
  * if null is sent, then the existing searcher will stop and get dropped
@@ -15,7 +20,7 @@ export interface SearchWorkerInput {
 
 type IncomingMessageEvent = MessageEvent<SearchWorkerInput | null>;
 export type ReplyData =
-  | { searchId: number; results: Candidate[] }
+  | { searchId: number; results: Candidate[]; progress: SearchProgress }
   | { error: Error };
 
 const RESPOND_INTERVAL = 200;
@@ -55,7 +60,11 @@ function runSlice(
     }
     results.add(candidate);
   }
-  reply({ searchId, results: results.results });
+  reply({
+    searchId,
+    results: results.results,
+    progress: searcher.calcProgress(),
+  });
 
   if (hasMore) {
     scheduleSlice(searcher, results, searchId);

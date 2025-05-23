@@ -39,12 +39,10 @@
   <Table.Body>
     {#each results as result (result.word)}
       <Table.Row>
-        <Table.Cell><div in:fade>{result.word}</div></Table.Cell>
-        <Table.Cell class="text-right"
-          ><div in:fade>
-            {@html highlightLetters(input, result.positions)}
-          </div></Table.Cell
-        >
+        <Table.Cell>{result.word}</Table.Cell>
+        <Table.Cell class="text-right">
+          {@html highlightLetters(input, result.positions)}
+        </Table.Cell>
       </Table.Row>
     {/each}
   </Table.Body>

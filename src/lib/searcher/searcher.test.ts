@@ -116,3 +116,90 @@ test("make initial pos", () => {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
   ]);
 });
+
+test("calculate progress", () => {
+  const s = new Searcher(["a", "b", "c", "d"], [true, true, true, true], 4);
+
+  function testProgress(
+    lettersLen,
+    minLen,
+    maxLen,
+    lastPos,
+    expectedRemaining
+  ) {
+    s.lettersLen = lettersLen;
+    s.minLen = minLen;
+    s.maxLen = maxLen;
+    s.lastPos = lastPos;
+
+    s.calcTotalPossibilities();
+    const progress = s.calcProgress();
+    expect(progress.remaining).toEqual(expectedRemaining);
+  }
+
+  testProgress(1, 0, 1, null, 2);
+  testProgress(2, 0, 2, null, 4);
+
+  // 2 min 1:
+  // 0 0
+  // 1
+  // 1 1
+  //   1
+  testProgress(2, 1, 2, null, 3);
+  testProgress(2, 1, 2, [0], 2);
+  testProgress(2, 1, 2, [0, 1], 1);
+  testProgress(2, 1, 2, [1], 0);
+
+  // 3 min 1
+  // 0 0 0
+  // 1
+  // 1 1
+  // 1 1 1
+  // 1   1
+  //   1
+  //   1 1
+  //     1
+  testProgress(3, 1, 3, null, 7);
+  testProgress(3, 1, 3, [0], 6);
+  testProgress(3, 1, 3, [0, 1], 5);
+  testProgress(3, 1, 3, [0, 1, 2], 4);
+  testProgress(3, 1, 3, [0, 2], 3);
+  testProgress(3, 1, 3, [1], 2);
+  testProgress(3, 1, 3, [1, 2], 1);
+  testProgress(3, 1, 3, [2], 0);
+
+  // 5 min 3:
+  // 1 1 1
+  // 1 1 1 1
+  // 1 1 1 1 1
+  // 1 1 1   1
+  // 1 1   1
+  // 1 1   1 1
+  // 1 1     1       _ 3 min 1
+  // 1   1 1
+  // 1   1 1 1
+  // 1   1   1
+  // 1     1 1       _ 4 min 2
+  //   1 1 1
+  //   1 1 1 1
+  //   1 1   1
+  //   1   1 1
+  //     1 1 1       _ 5 min 3
+  testProgress(5, 3, 5, null, 16);
+  testProgress(5, 3, 5, [0, 1, 2], 15);
+  testProgress(5, 3, 5, [0, 1, 2, 3], 14);
+  testProgress(5, 3, 5, [0, 1, 2, 3, 4], 13);
+  testProgress(5, 3, 5, [0, 1, 2, 4], 12);
+  testProgress(5, 3, 5, [0, 1, 3], 11);
+  testProgress(5, 3, 5, [0, 1, 3, 4], 10);
+  testProgress(5, 3, 5, [0, 1, 4], 9);
+  testProgress(5, 3, 5, [0, 2, 3], 8);
+  testProgress(5, 3, 5, [0, 2, 3, 4], 7);
+  testProgress(5, 3, 5, [0, 2, 4], 6);
+  testProgress(5, 3, 5, [0, 3, 4], 5);
+  testProgress(5, 3, 5, [1, 2, 3], 4);
+  testProgress(5, 3, 5, [1, 2, 3, 4], 3);
+  testProgress(5, 3, 5, [1, 2, 4], 2);
+  testProgress(5, 3, 5, [1, 3, 4], 1);
+  testProgress(5, 3, 5, [2, 3, 4], 0);
+});
