@@ -34,20 +34,44 @@
   let text = $state("");
   let minLen = $state(3);
   let maxLen = $state<number | null>(null); // Use null for no limit initially
+  let wordConstraints = $state("");
+  let wordConstraintsError = $state(null);
   let useStats = $state(true);
   let greedyStatsPruning = $state(true);
   let useAllWords = $state(true);
 
   // query when text or settings change
   $effect(() => {
+    let words = text.split(" ").filter((w) => w.length > 0);
+
+    wordConstraintsError = null;
+    let parsedWordConstraints = new Array(words.length).fill(false);
+    if (wordConstraints) {
+      for (let constraint of wordConstraints.split(",")) {
+        constraint = constraint.trim();
+        if (!constraint) {
+          continue;
+        }
+
+        const num = parseInt(constraint);
+        if (isNaN(num)) {
+          wordConstraintsError = `${constraint} is not a number`;
+          return;
+        }
+        if (num >= 1 && num <= words.length) {
+          parsedWordConstraints[num - 1] = true;
+        }
+      }
+    }
+
     onquery({
       searchId: 0,
-      words: text.split(" ").filter((w) => w.length > 0),
+      words,
       minLen,
       maxLen,
+      wordConstraints: parsedWordConstraints,
       useStats,
       greedyStatsPruning,
-      useAllWords,
     });
   });
 
@@ -118,6 +142,23 @@
           </div>
           <Input id="maxLen" type="number" bind:value={maxLen} min="0" />
         </div>
+        <div class="flex flex-col gap-2 sm:col-span-full">
+          <div class="flex flex-row gap-2">
+            <Label for="wordConstraints">Usage Requirements (optional)</Label>
+            <Tooltip
+              text="Comma separated list of indices, specifying letters to used from the chosen words. E.g. 1,2,3 means at least one letter from the first, second and third word needs to be present in the result. If omittied, then no limit will be applied."
+            />
+          </div>
+          <Input id="wordConstraints" bind:value={wordConstraints} min="0" />
+          {#if wordConstraintsError}
+            <div class="flex flex-row gap-2">
+              <Warn class="h-5 w-5 text-yellow-700" />
+              <p class="text-yellow-700">
+                Unable to parse usage Requirements constraints: {wordConstraintsError}
+              </p>
+            </div>
+          {/if}
+        </div>
         <div class="flex items-center space-x-2">
           <Switch id="useStats" bind:checked={useStats} />
           <Label for="useStats">Use Bigram Stats</Label>
@@ -130,13 +171,6 @@
           <Label for="greedyStats">Greedy Stats Pruning</Label>
           <Tooltip
             text="If enabled, the searcher will aggressively discard results that are unlikely to be correct, speeding up the search process."
-          />
-        </div>
-        <div class="flex items-center space-x-2 sm:col-span-full">
-          <Switch id="useAllWords" bind:checked={useAllWords} />
-          <Label for="useAllWords">Use All Words</Label>
-          <Tooltip
-            text="If enabled, the resulting name will contain at least one letter from each of the input words."
           />
         </div>
       </div>

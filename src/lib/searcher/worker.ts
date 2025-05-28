@@ -13,9 +13,9 @@ export interface SearchWorkerInput {
   words: string[];
   minLen: number | null;
   maxLen: number | null;
+  wordConstraints: boolean[];
   useStats: boolean;
   greedyStatsPruning: boolean;
-  useAllWords: boolean;
 }
 
 type IncomingMessageEvent = MessageEvent<SearchWorkerInput | null>;
@@ -72,13 +72,9 @@ function runSlice(
 }
 
 function makeSearcher(input: SearchWorkerInput): Searcher {
-  const wordConstraints = new Array(input.words.length).fill(
-    input.useAllWords ? true : false
-  );
-
   return new Searcher(
     input.words,
-    wordConstraints,
+    input.wordConstraints,
     input.minLen ?? 0,
     input.maxLen,
     input.useStats,
