@@ -10,7 +10,8 @@
 
 <div class="flex flex-col gap-2 mx-2 mb-4">
   <div class="flex items-center justify-between text-sm font-medium">
-    <span id="progressLabel">Searching...</span>
+    <span id="progressLabel">{value !== 100 ? "Searching..." : "Finished"}</span
+    >
     <span>{Math.trunc(value * 100) / 100}%</span>
   </div>
   <Progress

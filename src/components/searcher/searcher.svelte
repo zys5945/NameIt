@@ -148,7 +148,7 @@
   onmouseenter={stopAnimation}
 >
   <UserInput onquery={query} {placeholder} bind:inputFocus {error} />
-  {#if queryString !== "" && !animating}
+  {#if displayResultsArray != null && queryString !== "" && !animating}
     <ProgressBar value={progressPercent} />
   {/if}
   <ResultsTable input={queryString} results={displayResultsArray} />
