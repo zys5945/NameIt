@@ -142,7 +142,7 @@ export class Searcher {
     this.letters = words.join("");
     this.lettersLen = this.letters.length;
 
-    this.minLen = minLen;
+    this.minLen = Math.max(minLen, 1);
     if (this.minLen < this.numWordConstraints) {
       this.minLen = this.numWordConstraints;
     }
