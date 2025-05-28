@@ -141,9 +141,9 @@
 <!-- have inputs in the middle if the user is not interacting with it, and there's no user-initiated search results -->
 <div
   role="search"
-  class="flex flex-col w-full max-w-[800px] absolute ml-auto mr-auto left-1/2 -translate-x-1/2 transition-all
+  class="flex flex-col w-full max-w-[800px] absolute ml-auto mr-auto px-2 left-1/2 -translate-x-1/2 transition-all
    {inputFocus || (queryString !== '' && !animating)
-    ? 'top-4'
+    ? 'top-2'
     : 'top-1/2 -translate-y-1/2'}"
   onmouseenter={stopAnimation}
 >

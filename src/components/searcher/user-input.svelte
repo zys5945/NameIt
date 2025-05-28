@@ -59,7 +59,7 @@
   });
 </script>
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-2 mb-2">
   <!-- Input -->
   <div class="flex flex-row gap-1">
     <Input
@@ -101,7 +101,7 @@
 
   <Collapsible.Root bind:open={showSettings}>
     <Collapsible.Content>
-      <div class="grid grid-cols-2 gap-4 rounded-md border p-4">
+      <div class="grid sm:grid-cols-2 gap-4 rounded-md border p-4">
         <div class="flex flex-col gap-2">
           <div class="flex flex-row gap-2">
             <Label for="minLen">Min Length</Label>
@@ -132,7 +132,7 @@
             text="If enabled, the searcher will aggressively discard results that are unlikely to be correct, speeding up the search process."
           />
         </div>
-        <div class="flex items-center space-x-2 col-span-full">
+        <div class="flex items-center space-x-2 sm:col-span-full">
           <Switch id="useAllWords" bind:checked={useAllWords} />
           <Label for="useAllWords">Use All Words</Label>
           <Tooltip
