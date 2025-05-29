@@ -4,6 +4,7 @@ import path from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  base: "NameIt",
   plugins: [tailwindcss(), svelte()],
-  resolve: { alias: { $lib: path.resolve("./src/lib") } }
+  resolve: { alias: { $lib: path.resolve("./src/lib") } },
 });
